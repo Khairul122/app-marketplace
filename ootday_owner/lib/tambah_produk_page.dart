@@ -18,7 +18,7 @@ class TambahProdukPage extends StatefulWidget {
 
 class _TambahProdukPageState extends State<TambahProdukPage> {
   static const Color maroonColor = Color(0xFF5D1A1A);
-  static const Color redMain = Color(0xFFB40001);
+  static const Color redMain = Color(0xFF5D1A1A);
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();

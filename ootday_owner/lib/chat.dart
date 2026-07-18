@@ -69,7 +69,7 @@ class _ChatPageState extends State<ChatPage> {
 
       // ==================== APP BAR ====================
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB40001),
+        backgroundColor: const Color(0xFF5D1A1A),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),

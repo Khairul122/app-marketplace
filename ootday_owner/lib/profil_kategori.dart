@@ -12,7 +12,7 @@ class ProfilKategori extends StatefulWidget {
 }
 
 class _ProfilKategoriState extends State<ProfilKategori> {
-  static const Color redMain = Color(0xFFB40001);
+  static const Color redMain = Color(0xFF5D1A1A);
 
   final ProductService _productService = ProductService();
   List<dynamic> _categories = [];

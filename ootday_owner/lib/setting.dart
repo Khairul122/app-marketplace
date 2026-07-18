@@ -11,7 +11,7 @@ import 'pengaturan_komunikasi.dart';
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
 
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final Color darkRed = const Color(0xFF7A0000);
 
   @override

@@ -103,7 +103,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
       // ==================== APP BAR ====================
       appBar: AppBar(
-        backgroundColor: const Color(0xFFB40001),
+        backgroundColor: const Color(0xFF5D1A1A),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -317,7 +317,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       decoration: const BoxDecoration(
-        color: Color(0xFF8A0000),
+        color: Color(0xFF5D1A1A),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -372,7 +372,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       )
                     : const Icon(
                         Icons.send,
-                        color: Color(0xFF8A0000),
+                        color: Color(0xFF5D1A1A),
                         size: 20,
                       ),
               ),

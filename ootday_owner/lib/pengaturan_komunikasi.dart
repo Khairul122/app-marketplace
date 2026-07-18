@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class PengaturanKomunikasi extends StatelessWidget {
   const PengaturanKomunikasi({super.key});
 
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final Color darkRed = const Color(0xFF7A0000);
 
   @override

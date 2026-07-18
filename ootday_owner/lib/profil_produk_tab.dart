@@ -11,7 +11,7 @@ class ProfilProdukTab extends StatefulWidget {
 }
 
 class ProfilProdukTabState extends State<ProfilProdukTab> {
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final ProductService _productService = ProductService();
 
   List<Map<String, dynamic>> _products = [];
@@ -42,7 +42,7 @@ class ProfilProdukTabState extends State<ProfilProdukTab> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Color(0xFFB40001)),
+        child: CircularProgressIndicator(color: Color(0xFF5D1A1A)),
       );
     }
 

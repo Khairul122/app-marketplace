@@ -10,7 +10,7 @@ class PengaturanAkun extends StatefulWidget {
 }
 
 class _PengaturanAkunState extends State<PengaturanAkun> {
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final Color darkRed = const Color(0xFF7A0000);
 
   final AuthService _authService = AuthService();

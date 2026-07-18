@@ -15,7 +15,7 @@ class OwnerBottomNav extends StatelessWidget {
   /// 0 = Home, 1 = Search, 2 = Notifikasi, 3 = Profil
   final int currentIndex;
 
-  static const Color navRed = Color(0xFF8A0000);
+  static const Color navRed = Color(0xFF5D1A1A);
 
   void _goHome(BuildContext context) {
     if (currentIndex == 0) return;

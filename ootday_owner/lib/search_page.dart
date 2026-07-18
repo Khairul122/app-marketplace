@@ -14,7 +14,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final Color greyBG = const Color(0xFFF2F2F2);
   final ApiService _api = ApiService();
 

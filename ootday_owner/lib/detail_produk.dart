@@ -8,7 +8,7 @@ class DetailProduk extends StatelessWidget {
 
   const DetailProduk({super.key, required this.product});
 
-  static const Color redMain = Color(0xFFB40001);
+  static const Color redMain = Color(0xFF5D1A1A);
   static const Color darkRed = Color(0xFF7A0000);
 
   String get _name => (product['name'] as String?) ?? 'Produk';

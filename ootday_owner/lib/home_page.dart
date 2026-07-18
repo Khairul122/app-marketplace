@@ -7,8 +7,8 @@ import 'order_status_detail_page.dart';
 import 'order_history_page.dart';
 
 class HomePage extends StatelessWidget {
-  final Color redMain = const Color(0xFFB40001);
-  final Color lightRed = const Color(0xFFE24545);
+  final Color redMain = const Color(0xFF5D1A1A);
+  final Color lightRed = const Color(0xFFA53C3C);
   final Color greyBG = const Color(0xFFF2F2F2);
 
   const HomePage({super.key});

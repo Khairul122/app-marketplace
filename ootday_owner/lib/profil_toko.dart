@@ -20,7 +20,7 @@ class _ProfilTokoState extends State<ProfilToko>
   late TabController _tabController;
   bool _isUpdatingPhoto = false;
 
-  static const Color _redMain = Color(0xFFB40001);
+  static const Color _redMain = Color(0xFF5D1A1A);
   static const Color _darkRed = Color(0xFF7A0000);
   static const Color _greyBg = Color(0xFFF2F2F2);
 

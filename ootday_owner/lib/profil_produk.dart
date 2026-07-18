@@ -19,7 +19,7 @@ class ProfilProduk extends StatefulWidget {
 }
 
 class _ProfilProdukState extends State<ProfilProduk> {
-  static const Color redMain = Color(0xFFB40001);
+  static const Color redMain = Color(0xFF5D1A1A);
   static const Color darkRed = Color(0xFF7A0000);
 
   final ProductService _productService = ProductService();

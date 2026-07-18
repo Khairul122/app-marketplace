@@ -10,7 +10,7 @@ class LogoutPage extends StatefulWidget {
 }
 
 class _LogoutPageState extends State<LogoutPage> {
-  final Color redMain = const Color(0xFFB40001);
+  final Color redMain = const Color(0xFF5D1A1A);
   final Color darkRed = const Color(0xFF7A0000);
   final AuthService _authService = AuthService();
   bool _isLoading = false;
