@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes modal-pop {
+    0% { opacity: 0; transform: scale(0.94) translateY(8px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes overlay-fade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.animate-modal-pop {
+    animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-overlay-fade {
+    animation: overlay-fade 0.2s ease-out;
+}

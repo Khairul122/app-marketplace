@@ -1,0 +1,6 @@
+# Local tooling state, not meant for version control
+.claude/
+
+# OS junk
+.DS_Store
+Thumbs.db
