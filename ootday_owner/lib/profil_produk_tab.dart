@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ootday_owner/detail_produk.dart';
 import 'package:ootday_owner/services/product_service.dart';
 import 'package:ootday_owner/tambah_produk_page.dart';
+import 'package:ootday_owner/services/api_service.dart';
 
 class ProfilProdukTab extends StatefulWidget {
   const ProfilProdukTab({super.key});
@@ -137,13 +138,16 @@ class ProfilProdukTabState extends State<ProfilProdukTab> {
     final priceInt = price is num ? price.toInt() : int.tryParse('$price') ?? 0;
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final refresh = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
             builder: (_) => DetailProduk(product: product),
           ),
         );
+        if (refresh == true) {
+          loadProducts();
+        }
       },
       child: Container(
         decoration: BoxDecoration(
@@ -215,19 +219,10 @@ class ProfilProdukTabState extends State<ProfilProdukTab> {
   }
 
   Widget _buildProductImage(String imageUrl) {
-    if (imageUrl.startsWith('http')) {
+    final resolvedUrl = ApiService.resolveImageUrl(imageUrl);
+    if (resolvedUrl.startsWith('http')) {
       return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (_, __, ___) => _placeholderImage(),
-      );
-    }
-
-    if (imageUrl.isNotEmpty) {
-      return Image.asset(
-        imageUrl,
+        resolvedUrl,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,

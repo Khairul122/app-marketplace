@@ -31,7 +31,7 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
   File? _imageFile;
   int? _selectedCategoryId;
   List<Map<String, dynamic>> _categories = [];
-  final Set<String> _selectedSizes = {'S', 'M', 'L', 'XL'};
+  final List<Map<String, dynamic>> _variantsList = [];
   bool _isLoading = false;
   bool _isInitializing = true;
   String? _initError;
@@ -97,21 +97,36 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedSizes.isEmpty) {
-      _showMessage('Pilih minimal satu ukuran');
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
       final price = num.parse(_priceController.text.trim());
-      final stock = int.parse(_stockController.text.trim());
+      int stock = 0;
+      final List<Map<String, dynamic>> finalVariants = [];
 
-      // Bagi stok rata ke tiap ukuran yang dipilih sebagai variant awal.
-      final sizesList = _selectedSizes.toList();
-      final variantStock =
-          sizesList.isEmpty ? stock : (stock / sizesList.length).ceil();
+      if (_variantsList.isNotEmpty) {
+        for (final v in _variantsList) {
+          final size = (v['size'] as String?)?.trim() ?? 'All Size';
+          final color = (v['color'] as String?)?.trim() ?? 'Default';
+          final vStock = (v['stock'] as num?)?.toInt() ?? 0;
+          stock += vStock;
+          
+          finalVariants.add({
+            'size': size,
+            'color': color,
+            'stock': vStock,
+            'imagePath': v['imagePath'],
+          });
+        }
+      } else {
+        final generalStock = int.tryParse(_stockController.text.trim()) ?? 0;
+        stock = generalStock;
+        finalVariants.add({
+          'size': 'All Size',
+          'color': 'Default',
+          'stock': generalStock,
+        });
+      }
 
       await _productService.addProduct(
         name: _nameController.text.trim(),
@@ -120,13 +135,7 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
         categoryId: _selectedCategoryId,
         description: _descriptionController.text.trim(),
         imagePaths: _imageFile != null ? [_imageFile!.path] : const [],
-        variants: sizesList
-            .map((size) => {
-                  'size': size,
-                  'color': 'Default',
-                  'stock': variantStock,
-                })
-            .toList(),
+        variants: finalVariants,
       );
 
       if (!mounted) return;
@@ -290,6 +299,7 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
                                         FilteringTextInputFormatter.digitsOnly,
                                       ],
                                       validator: (v) {
+                                        if (_variantsList.isNotEmpty) return null;
                                         if (v == null || v.trim().isEmpty) {
                                           return 'Stok wajib diisi';
                                         }
@@ -316,7 +326,7 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
                                         : null,
                               ),
                               const SizedBox(height: 18),
-                              _sizeSelector(),
+                              _variantsSection(),
                               const SizedBox(height: 28),
                               SizedBox(
                                 width: double.infinity,
@@ -498,17 +508,134 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
     );
   }
 
+  Future<void> _quickAddCategory() async {
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Tambah Kategori Baru', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: maroonColor)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: GoogleFonts.outfit(color: maroonColor),
+          decoration: InputDecoration(
+            hintText: 'Nama kategori (contoh: Kaos, Celana)',
+            hintStyle: GoogleFonts.outfit(color: Colors.grey),
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Batal', style: GoogleFonts.outfit(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            style: ElevatedButton.styleFrom(backgroundColor: maroonColor),
+            child: Text('Simpan', style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (name == null || name.isEmpty || !mounted) return;
+
+    try {
+      setState(() => _isLoading = true);
+      final newCategory = await _productService.addCategory(name);
+      
+      // Reload list kategori
+      final categories = await _productService.getCategories();
+      
+      if (!mounted) return;
+      setState(() {
+        _categories = categories.map((c) => Map<String, dynamic>.from(c as Map)).toList();
+        _selectedCategoryId = newCategory['id'] as int?;
+        _isLoading = false;
+      });
+      _showMessage('Kategori "$name" berhasil dibuat!', isError: false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showMessage('Gagal membuat kategori: ${e is ApiException ? e.message : e}');
+    }
+  }
+
   Widget _categoryDropdown() {
+    if (_categories.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Kategori',
+            style: GoogleFonts.outfit(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: maroonColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _quickAddCategory,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: maroonColor.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Iconsax.add_circle, color: maroonColor, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Belum ada kategori. Tap untuk membuat baru.',
+                      style: GoogleFonts.outfit(
+                        color: maroonColor.withValues(alpha: 0.7),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Kategori',
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: maroonColor,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Kategori',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: maroonColor,
+              ),
+            ),
+            GestureDetector(
+              onTap: _quickAddCategory,
+              child: Text(
+                '+ Tambah Baru',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: maroonColor,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Container(
@@ -540,51 +667,174 @@ class _TambahProdukPageState extends State<TambahProdukPage> {
     );
   }
 
-  Widget _sizeSelector() {
-    const sizes = ['S', 'M', 'L', 'XL'];
+  void _addVariantRow() {
+    setState(() {
+      _variantsList.add({
+        'size': 'M',
+        'color': 'Hitam',
+        'stock': 10,
+        'imagePath': null,
+      });
+    });
+  }
+
+  void _removeVariantRow(int index) {
+    setState(() {
+      _variantsList.removeAt(index);
+    });
+  }
+
+  Future<void> _pickVariantImage(int index) async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _variantsList[index]['imagePath'] = picked.path;
+    });
+  }
+
+  Widget _variantsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Ukuran Tersedia',
-          style: GoogleFonts.outfit(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: maroonColor,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Varian Produk (Opsional)',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: maroonColor,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _addVariantRow,
+              icon: const Icon(Icons.add_circle_outline, size: 18),
+              label: Text('Tambah Varian', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+              style: TextButton.styleFrom(foregroundColor: maroonColor),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (_variantsList.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'Belum ada varian khusus. Isi "Stok" di atas jika produk tidak memiliki varian.',
+                style: GoogleFonts.outfit(color: Colors.grey.shade500, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _variantsList.length,
+            itemBuilder: (context, index) {
+              final variant = _variantsList[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _pickVariantImage(index),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: variant['imagePath'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(9),
+                                child: Image.file(
+                                  File(variant['imagePath'] as String),
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : Icon(
+                                Iconsax.camera,
+                                size: 18,
+                                color: maroonColor.withValues(alpha: 0.5),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        initialValue: variant['size'],
+                        decoration: InputDecoration(
+                          labelText: 'Ukuran',
+                          labelStyle: GoogleFonts.outfit(fontSize: 12),
+                          hintText: 'S, M, L, All Size',
+                          isDense: true,
+                        ),
+                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                        onChanged: (val) => variant['size'] = val.trim(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        initialValue: variant['color'],
+                        decoration: InputDecoration(
+                          labelText: 'Warna',
+                          labelStyle: GoogleFonts.outfit(fontSize: 12),
+                          hintText: 'Hitam, Putih, Default',
+                          isDense: true,
+                        ),
+                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                        onChanged: (val) => variant['color'] = val.trim(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        initialValue: variant['stock']?.toString(),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: InputDecoration(
+                          labelText: 'Stok',
+                          labelStyle: GoogleFonts.outfit(fontSize: 12),
+                          isDense: true,
+                        ),
+                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                        onChanged: (val) {
+                          variant['stock'] = int.tryParse(val) ?? 0;
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      onPressed: () => _removeVariantRow(index),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          children: sizes.map((size) {
-            final selected = _selectedSizes.contains(size);
-            return FilterChip(
-              label: Text(size, style: GoogleFonts.outfit()),
-              selected: selected,
-              onSelected: (val) {
-                setState(() {
-                  if (val) {
-                    _selectedSizes.add(size);
-                  } else {
-                    _selectedSizes.remove(size);
-                  }
-                });
-              },
-              selectedColor: maroonColor.withValues(alpha: 0.15),
-              checkmarkColor: maroonColor,
-              labelStyle: GoogleFonts.outfit(
-                color: selected ? maroonColor : Colors.grey.shade700,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-              ),
-              side: BorderSide(
-                color: selected
-                    ? maroonColor.withValues(alpha: 0.4)
-                    : Colors.grey.shade300,
-              ),
-            );
-          }).toList(),
-        ),
       ],
     );
   }

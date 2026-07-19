@@ -21,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // already logged in) should go straight to the dashboard, never back to `/`
         // (which itself redirects to login) — avoids an infinite redirect loop.
         $middleware->redirectUsersTo(fn () => route('admin.dashboard'));
+
+        // Trust the reverse-proxy headers from dev tunnels (localtonet, ngrok, etc.)
+        // so Laravel knows the original request was HTTPS and generates https:// asset
+        // URLs — otherwise @vite() emits http:// links that get blocked as mixed
+        // content on a page loaded over https, breaking all CSS/JS.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

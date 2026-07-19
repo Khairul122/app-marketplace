@@ -9,22 +9,39 @@ class ApiException implements Exception {
   final int statusCode;
   final Map<String, dynamic>? errors;
 
-  ApiException(this.message, this.statusCode, {this.errors});
+  ApiException(String rawMessage, this.statusCode, {this.errors})
+      : message = _formatMessage(rawMessage, errors);
+
+  static String _formatMessage(String rawMessage, Map<String, dynamic>? errors) {
+    if (errors != null && errors.isNotEmpty) {
+      final messages = <String>[];
+      errors.forEach((key, value) {
+        if (value is List) {
+          messages.add(value.join(', '));
+        } else {
+          messages.add(value.toString());
+        }
+      });
+      return messages.join('\n');
+    }
+    return rawMessage;
+  }
 
   @override
   String toString() => message;
 }
 
 class ApiService {
-  /// Ganti sesuai host backend Laravel saat development (emulator Android
-  /// pakai 10.0.2.2, device fisik pakai IP LAN komputer).
-  static const String baseUrl = "http://10.0.2.2:8000/api";
+  /// Tunnel localtonet ke backend Laravel lokal. Ganti kalau URL tunnel
+  /// berubah (subdomain localtonet gratis biasanya baru tiap restart).
+  static const String baseUrl = "https://xbncmdd6jn.localto.net/api";
 
   Future<Map<String, String>> _headers({bool json = true}) async {
     final token = await TokenStore.instance.getToken();
     return {
       if (json) 'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'localtonet-skip-warning': 'true',
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
@@ -97,9 +114,12 @@ class ApiService {
     if (filePaths != null) {
       for (final entry in filePaths.entries) {
         for (var i = 0; i < entry.value.length; i++) {
+          final fieldName = entry.key.contains('[') 
+              ? entry.key 
+              : (entry.key == 'photo' ? entry.key : '${entry.key}[$i]');
           request.files.add(
             await http.MultipartFile.fromPath(
-              '${entry.key}[$i]',
+              fieldName,
               entry.value[i],
             ),
           );
@@ -110,5 +130,16 @@ class ApiService {
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     return _handle(response);
+  }
+
+  static String resolveImageUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    
+    final apiIndex = baseUrl.indexOf('/api');
+    final domain = apiIndex != -1 ? baseUrl.substring(0, apiIndex) : baseUrl;
+    
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    return '$domain$cleanPath';
   }
 }

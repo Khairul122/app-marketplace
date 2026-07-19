@@ -112,6 +112,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (row['color'] != null && row['color'].toString().isNotEmpty) {
           loadedColors.add(row['color'].toString());
         }
+        if (row['image_url'] != null && row['image_url'].toString().isNotEmpty) {
+          final resolvedVariantImg = CartData.resolveImageUrl(row['image_url'].toString());
+          if (!loadedImages.contains(resolvedVariantImg)) {
+            loadedImages.add(resolvedVariantImg);
+          }
+        }
       }
 
       if (mounted) {
@@ -696,12 +702,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             itemBuilder: (context, index) {
                               final color = _colors[index];
                               final bool isSel = _selectedColor == color;
+
+                              // Cari image_url khusus untuk warna varian ini jika ada
+                              String? variantImageUrl;
+                              for (final v in _variants) {
+                                if (v['color'] == color && v['image_url'] != null && v['image_url'].toString().isNotEmpty) {
+                                  variantImageUrl = v['image_url'].toString();
+                                  break;
+                                }
+                              }
+
+                              final displayImage = variantImageUrl != null
+                                  ? CartData.resolveImageUrl(variantImageUrl)
+                                  : (index < _images.length ? _images[index] : widget.product['image']);
+
                               return GestureDetector(
                                 onTap: () {
                                   setState(() {
                                     _selectedColor = color;
                                     _selectedColorIndex = index;
-                                    if (index < _images.length) {
+                                    if (variantImageUrl != null) {
+                                      final resolved = CartData.resolveImageUrl(variantImageUrl);
+                                      final imgIdx = _images.indexOf(resolved);
+                                      if (imgIdx != -1) {
+                                        _pageController.animateToPage(imgIdx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                                      }
+                                    } else if (index < _images.length) {
                                       _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
                                     }
                                   });
@@ -712,7 +738,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(color: isSel ? maroonColor : Colors.grey.withOpacity(0.3), width: 2),
-                                    image: DecorationImage(image: _imageProviderFor(widget.product['image']), fit: BoxFit.cover),
+                                    image: DecorationImage(
+                                      image: _imageProviderFor(displayImage),
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                   alignment: Alignment.center,
                                   child: Container(

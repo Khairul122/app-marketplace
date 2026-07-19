@@ -75,6 +75,9 @@ class ProductController extends Controller
             'variants.*.stock' => ['nullable', 'integer', 'min:0'],
             'variants.*.price' => ['nullable', 'numeric', 'min:0'],
             'variants.*.price_adjustment' => ['nullable', 'numeric'],
+            'variants.*.image_url' => ['nullable', 'string'],
+            'variant_images' => ['nullable', 'array'],
+            'variant_images.*' => ['file', 'image', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
@@ -102,13 +105,21 @@ class ProductController extends Controller
             ]);
         }
 
-        foreach ($data['variants'] ?? [] as $variant) {
+        $variantImages = $request->file('variant_images', []);
+        foreach ($data['variants'] ?? [] as $index => $variant) {
+            $imageUrl = $variant['image_url'] ?? null;
+            if (isset($variantImages[$index]) && $variantImages[$index]->isValid()) {
+                $path = $variantImages[$index]->store('variants', 'public');
+                $imageUrl = Storage::url($path);
+            }
+
             $product->variants()->create([
                 'size' => $variant['size'],
                 'color' => $variant['color'],
                 'stock' => $variant['stock'] ?? 0,
                 'price' => $variant['price'] ?? null,
                 'price_adjustment' => $variant['price_adjustment'] ?? 0,
+                'image_url' => $imageUrl,
             ]);
         }
 
@@ -139,13 +150,67 @@ class ProductController extends Controller
             'stock' => ['sometimes', 'integer', 'min:0'],
             'description' => ['sometimes', 'nullable', 'string'],
             'status' => ['sometimes', 'in:active,inactive'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['file', 'image', 'max:5120'],
+            'variants' => ['nullable', 'array'],
+            'variants.*.size' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.color' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.stock' => ['nullable', 'integer', 'min:0'],
+            'variants.*.price' => ['nullable', 'numeric', 'min:0'],
+            'variants.*.price_adjustment' => ['nullable', 'numeric'],
+            'variants.*.image_url' => ['nullable', 'string'],
+            'variant_images' => ['nullable', 'array'],
+            'variant_images.*' => ['file', 'image', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
         }
 
-        $product->update($validator->validated());
+        $data = $validator->validated();
+        $product->update($data);
+
+        // Upload main images if provided
+        if ($request->hasFile('images')) {
+            // Delete old images
+            foreach ($product->images as $oldImg) {
+                $filePath = str_replace('/storage/', '', $oldImg->image_url);
+                Storage::disk('public')->delete($filePath);
+                $oldImg->delete();
+            }
+
+            // Create new images
+            foreach ($request->file('images') as $index => $file) {
+                $path = $file->store('products', 'public');
+                $product->images()->create([
+                    'image_url' => Storage::url($path),
+                    'is_primary' => $index === 0,
+                    'sort_order' => $index,
+                ]);
+            }
+        }
+
+        // Update variants if provided
+        if ($request->has('variants')) {
+            $product->variants()->delete();
+            $variantImages = $request->file('variant_images', []);
+            foreach ($request->input('variants', []) as $index => $variant) {
+                $imageUrl = $variant['image_url'] ?? null;
+                if (isset($variantImages[$index]) && $variantImages[$index]->isValid()) {
+                    $path = $variantImages[$index]->store('variants', 'public');
+                    $imageUrl = Storage::url($path);
+                }
+
+                $product->variants()->create([
+                    'size' => $variant['size'],
+                    'color' => $variant['color'],
+                    'stock' => $variant['stock'] ?? 0,
+                    'price' => $variant['price'] ?? null,
+                    'price_adjustment' => $variant['price_adjustment'] ?? 0,
+                    'image_url' => $imageUrl,
+                ]);
+            }
+        }
 
         return response()->json(['message' => 'Produk diperbarui', 'product' => $product->load(['images', 'variants', 'category'])]);
     }

@@ -58,6 +58,11 @@ class ProductService {
       if (description != null) 'description': description,
     };
 
+    final Map<String, List<String>> filePathsMap = {};
+    if (imagePaths.isNotEmpty) {
+      filePathsMap['images'] = imagePaths;
+    }
+
     for (var i = 0; i < variants.length; i++) {
       final variant = variants[i];
       if (variant['size'] != null) {
@@ -69,13 +74,16 @@ class ProductService {
       if (variant['stock'] != null) {
         fields['variants[$i][stock]'] = variant['stock'].toString();
       }
+      if (variant['imagePath'] != null && (variant['imagePath'] as String).isNotEmpty) {
+        filePathsMap['variant_images[$i]'] = [variant['imagePath'] as String];
+      }
     }
 
     final data = await _api.multipart(
       'POST',
       '/my-products',
       fields: fields,
-      filePaths: imagePaths.isNotEmpty ? {'images': imagePaths} : null,
+      filePaths: filePathsMap.isNotEmpty ? filePathsMap : null,
     );
 
     if (data is Map && data['product'] != null) {
@@ -89,8 +97,59 @@ class ProductService {
     await _api.delete('/my-products/$id');
   }
 
-  /// PUT /my-products/{id}
-  Future<void> updateProduct(int id, Map<String, dynamic> fields) async {
-    await _api.put('/my-products/$id', fields);
+  /// PUT /my-products/{id} (via POST spoofing)
+  Future<Map<String, dynamic>> updateProduct({
+    required int id,
+    required String name,
+    required num price,
+    int stock = 0,
+    int? categoryId,
+    String? description,
+    List<String> imagePaths = const [],
+    List<Map<String, dynamic>> variants = const [],
+  }) async {
+    final fields = <String, String>{
+      'name': name,
+      'price': price.toString(),
+      'stock': stock.toString(),
+      if (categoryId != null) 'category_id': categoryId.toString(),
+      if (description != null) 'description': description,
+    };
+
+    final Map<String, List<String>> filePathsMap = {};
+    if (imagePaths.isNotEmpty) {
+      filePathsMap['images'] = imagePaths;
+    }
+
+    for (var i = 0; i < variants.length; i++) {
+      final variant = variants[i];
+      if (variant['size'] != null) {
+        fields['variants[$i][size]'] = variant['size'].toString();
+      }
+      if (variant['color'] != null) {
+        fields['variants[$i][color]'] = variant['color'].toString();
+      }
+      if (variant['stock'] != null) {
+        fields['variants[$i][stock]'] = variant['stock'].toString();
+      }
+      if (variant['image_url'] != null) {
+        fields['variants[$i][image_url]'] = variant['image_url'].toString();
+      }
+      if (variant['imagePath'] != null && (variant['imagePath'] as String).isNotEmpty) {
+        filePathsMap['variant_images[$i]'] = [variant['imagePath'] as String];
+      }
+    }
+
+    final data = await _api.multipart(
+      'POST',
+      '/my-products/$id?_method=PUT',
+      fields: fields,
+      filePaths: filePathsMap.isNotEmpty ? filePathsMap : null,
+    );
+
+    if (data is Map && data['product'] != null) {
+      return Map<String, dynamic>.from(data['product']);
+    }
+    return Map<String, dynamic>.from(data as Map);
   }
 }

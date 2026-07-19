@@ -8,6 +8,9 @@ import 'services/auth_user_display.dart';
 import 'services/profile_photo_service.dart';
 import 'setting.dart';
 
+import 'services/dashboard_service.dart';
+import 'services/api_service.dart';
+
 class ProfilToko extends StatefulWidget {
   const ProfilToko({super.key});
 
@@ -19,6 +22,8 @@ class _ProfilTokoState extends State<ProfilToko>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isUpdatingPhoto = false;
+  int _totalProducts = 0;
+  bool _isLoadingStats = true;
 
   static const Color _redMain = Color(0xFF5D1A1A);
   static const Color _darkRed = Color(0xFF7A0000);
@@ -29,12 +34,29 @@ class _ProfilTokoState extends State<ProfilToko>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _refreshUserProfile();
+    _loadStats();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final dashboard = await DashboardService().getDashboard();
+      if (mounted) {
+        setState(() {
+          _totalProducts = (dashboard['total_products'] as num?)?.toInt() ?? 0;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
   }
 
   Future<void> _refreshUserProfile() async {
@@ -313,7 +335,7 @@ class _ProfilTokoState extends State<ProfilToko>
                 color: Colors.white,
                 child: photoUrl != null
                     ? Image.network(
-                        photoUrl,
+                        ApiService.resolveImageUrl(photoUrl),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _avatarPlaceholder(),
                       )
@@ -485,7 +507,7 @@ class _ProfilTokoState extends State<ProfilToko>
                 child: _miniStatCard(
                   icon: Icons.inventory_2_outlined,
                   label: 'Produk',
-                  value: '24',
+                  value: _isLoadingStats ? '...' : '$_totalProducts',
                   color: _darkRed,
                 ),
               ),
@@ -530,7 +552,7 @@ class _ProfilTokoState extends State<ProfilToko>
             child: ClipOval(
               child: photoUrl != null && photoUrl.isNotEmpty
                   ? Image.network(
-                      photoUrl,
+                      ApiService.resolveImageUrl(photoUrl),
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _storeLogoFallback(),
                     )
