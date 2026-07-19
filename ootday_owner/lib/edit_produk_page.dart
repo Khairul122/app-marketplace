@@ -68,15 +68,30 @@ class _EditProdukPageState extends State<EditProdukPage> {
     final rawVariants = widget.product['variants'] as List?;
     if (rawVariants != null) {
       _variantsList = rawVariants.map((v) => {
-        'size': v['size']?.toString() ?? 'All Size',
-        'color': v['color']?.toString() ?? 'Default',
+        'attribute1_name': v['attribute1_name']?.toString() ?? 'Varian',
+        'attribute1_value': v['attribute1_value']?.toString() ?? '-',
+        'attribute2_name': (v['attribute2_name']?.toString().isNotEmpty ?? false) ? v['attribute2_name'].toString() : null,
+        'attribute2_value': (v['attribute2_value']?.toString().isNotEmpty ?? false) ? v['attribute2_value'].toString() : null,
         'stock': v['stock'] is num ? (v['stock'] as num).toInt() : (int.tryParse('${v['stock']}') ?? 0),
         'image_url': v['image_url']?.toString(),
         'imagePath': null,
       }).toList();
     }
 
+    _syncStockController();
     _loadCategories();
+  }
+
+  /// Total stok field utama otomatis mengikuti jumlah stok semua varian
+  /// begitu ada minimal 1 varian (lihat `readOnly` di field "Stok" utama) —
+  /// dipanggil tiap kali daftar varian atau salah satu stok varian berubah.
+  void _syncStockController() {
+    if (_variantsList.isEmpty) return;
+    final total = _variantsList.fold<int>(
+      0,
+      (sum, v) => sum + ((v['stock'] as num?)?.toInt() ?? 0),
+    );
+    _stockController.text = total.toString();
   }
 
   @override
@@ -140,14 +155,18 @@ class _EditProdukPageState extends State<EditProdukPage> {
 
       if (_variantsList.isNotEmpty) {
         for (final v in _variantsList) {
-          final size = (v['size'] as String?)?.trim() ?? 'All Size';
-          final color = (v['color'] as String?)?.trim() ?? 'Default';
+          final attribute1Name = (v['attribute1_name'] as String?)?.trim() ?? 'Varian';
+          final attribute1Value = (v['attribute1_value'] as String?)?.trim() ?? '-';
+          final attribute2Name = (v['attribute2_name'] as String?)?.trim();
+          final attribute2Value = (v['attribute2_value'] as String?)?.trim();
           final vStock = (v['stock'] as num?)?.toInt() ?? 0;
           stock += vStock;
 
           finalVariants.add({
-            'size': size,
-            'color': color,
+            'attribute1_name': attribute1Name,
+            'attribute1_value': attribute1Value,
+            if (attribute2Name != null && attribute2Name.isNotEmpty) 'attribute2_name': attribute2Name,
+            if (attribute2Value != null && attribute2Value.isNotEmpty) 'attribute2_value': attribute2Value,
             'stock': vStock,
             'image_url': v['image_url'], // pertahankan URL lama jika tidak diganti
             'imagePath': v['imagePath'], // kirim path lokal jika baru diunggah
@@ -157,8 +176,8 @@ class _EditProdukPageState extends State<EditProdukPage> {
         final generalStock = int.tryParse(_stockController.text.trim()) ?? 0;
         stock = generalStock;
         finalVariants.add({
-          'size': 'All Size',
-          'color': 'Default',
+          'attribute1_name': 'Stok',
+          'attribute1_value': 'Umum',
           'stock': generalStock,
         });
       }
@@ -242,6 +261,7 @@ class _EditProdukPageState extends State<EditProdukPage> {
                                 hint: '20',
                                 icon: Iconsax.archive,
                                 controller: _stockController,
+                                readOnly: _variantsList.isNotEmpty,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                 validator: (v) {
@@ -315,7 +335,11 @@ class _EditProdukPageState extends State<EditProdukPage> {
                 : (_existingImageUrl != null && _existingImageUrl!.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.network(ApiService.resolveImageUrl(_existingImageUrl), fit: BoxFit.cover),
+                        child: Image.network(
+                      ApiService.resolveImageUrl(_existingImageUrl),
+                      headers: const {'localtonet-skip-warning': 'true'},
+                      fit: BoxFit.cover,
+                    ),
                       )
                     : Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -363,18 +387,22 @@ class _EditProdukPageState extends State<EditProdukPage> {
   void _addVariantRow() {
     setState(() {
       _variantsList.add({
-        'size': 'M',
-        'color': 'Hitam',
+        'attribute1_name': 'Ukuran',
+        'attribute1_value': 'M',
+        'attribute2_name': null,
+        'attribute2_value': null,
         'stock': 10,
         'image_url': null,
         'imagePath': null,
       });
+      _syncStockController();
     });
   }
 
   void _removeVariantRow(int index) {
     setState(() {
       _variantsList.removeAt(index);
+      _syncStockController();
     });
   }
 
@@ -428,72 +456,136 @@ class _EditProdukPageState extends State<EditProdukPage> {
             itemCount: _variantsList.length,
             itemBuilder: (context, index) {
               final variant = _variantsList[index];
+              final hasAttribute2 = variant['attribute2_name'] != null;
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () => _pickVariantImage(index),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: variant['imagePath'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(9),
-                                child: Image.file(File(variant['imagePath'] as String), fit: BoxFit.cover),
-                              )
-                            : (variant['image_url'] != null && (variant['image_url'] as String).isNotEmpty
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _pickVariantImage(index),
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: variant['imagePath'] != null
                                 ? ClipRRect(
                                     borderRadius: BorderRadius.circular(9),
-                                    child: Image.network(ApiService.resolveImageUrl(variant['image_url'] as String), fit: BoxFit.cover),
+                                    child: Image.file(File(variant['imagePath'] as String), fit: BoxFit.cover),
                                   )
-                                : Icon(Iconsax.camera, size: 18, color: maroonColor.withValues(alpha: 0.5))),
-                      ),
+                                : (variant['image_url'] != null && (variant['image_url'] as String).isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(9),
+                                        child: Image.network(
+                                          ApiService.resolveImageUrl(variant['image_url'] as String),
+                                          headers: const {'localtonet-skip-warning': 'true'},
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Icon(Iconsax.camera, size: 18, color: maroonColor.withValues(alpha: 0.5))),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            initialValue: variant['attribute1_name'],
+                            decoration: InputDecoration(labelText: 'Nama Atribut', labelStyle: GoogleFonts.outfit(fontSize: 12), hintText: 'Ukuran, Kapasitas...', isDense: true),
+                            style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                            onChanged: (val) => variant['attribute1_name'] = val.trim(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            initialValue: variant['attribute1_value'],
+                            decoration: InputDecoration(labelText: 'Nilai', labelStyle: GoogleFonts.outfit(fontSize: 12), hintText: 'M, 500ml...', isDense: true),
+                            style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                            onChanged: (val) => variant['attribute1_value'] = val.trim(),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          onPressed: () => _removeVariantRow(index),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        initialValue: variant['size'],
-                        decoration: InputDecoration(labelText: 'Ukuran', labelStyle: GoogleFonts.outfit(fontSize: 12), isDense: true),
-                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
-                        onChanged: (val) => variant['size'] = val.trim(),
+                    const SizedBox(height: 8),
+                    if (hasAttribute2)
+                      Row(
+                        children: [
+                          const SizedBox(width: 52),
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              initialValue: variant['attribute2_name'],
+                              decoration: InputDecoration(labelText: 'Nama Atribut 2', labelStyle: GoogleFonts.outfit(fontSize: 12), hintText: 'Warna, Rasa...', isDense: true),
+                              style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                              onChanged: (val) => variant['attribute2_name'] = val.trim(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              initialValue: variant['attribute2_value'],
+                              decoration: InputDecoration(labelText: 'Nilai', labelStyle: GoogleFonts.outfit(fontSize: 12), hintText: 'Hitam, Coklat...', isDense: true),
+                              style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                              onChanged: (val) => variant['attribute2_value'] = val.trim(),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                            tooltip: 'Hapus atribut kedua',
+                            onPressed: () => setState(() {
+                              variant['attribute2_name'] = null;
+                              variant['attribute2_value'] = null;
+                            }),
+                          ),
+                        ],
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(left: 52),
+                        child: TextButton.icon(
+                          onPressed: () => setState(() {
+                            variant['attribute2_name'] = 'Warna';
+                            variant['attribute2_value'] = '';
+                          }),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: Text('Tambah atribut kedua', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600)),
+                          style: TextButton.styleFrom(foregroundColor: maroonColor, padding: EdgeInsets.zero, minimumSize: const Size(0, 32)),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        initialValue: variant['color'],
-                        decoration: InputDecoration(labelText: 'Warna', labelStyle: GoogleFonts.outfit(fontSize: 12), isDense: true),
-                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
-                        onChanged: (val) => variant['color'] = val.trim(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 1,
-                      child: TextFormField(
-                        initialValue: variant['stock']?.toString(),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: InputDecoration(labelText: 'Stok', labelStyle: GoogleFonts.outfit(fontSize: 12), isDense: true),
-                        style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
-                        onChanged: (val) {
-                          variant['stock'] = int.tryParse(val) ?? 0;
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                      onPressed: () => _removeVariantRow(index),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const SizedBox(width: 52),
+                        SizedBox(
+                          width: 100,
+                          child: TextFormField(
+                            initialValue: variant['stock']?.toString(),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            decoration: InputDecoration(labelText: 'Stok', labelStyle: GoogleFonts.outfit(fontSize: 12), isDense: true),
+                            style: GoogleFonts.outfit(fontSize: 13, color: maroonColor),
+                            onChanged: (val) => setState(() {
+                              variant['stock'] = int.tryParse(val) ?? 0;
+                              _syncStockController();
+                            }),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -513,6 +605,7 @@ class _EditProdukPageState extends State<EditProdukPage> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,13 +618,16 @@ class _EditProdukPageState extends State<EditProdukPage> {
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
           maxLines: maxLines,
-          style: GoogleFonts.outfit(color: maroonColor),
+          readOnly: readOnly,
+          style: GoogleFonts.outfit(color: readOnly ? maroonColor.withValues(alpha: 0.6) : maroonColor),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.outfit(color: maroonColor.withValues(alpha: 0.3)),
             prefixIcon: Icon(icon, color: maroonColor.withValues(alpha: 0.5), size: 20),
+            suffixText: readOnly ? 'Otomatis' : null,
+            suffixStyle: GoogleFonts.outfit(fontSize: 11, color: maroonColor.withValues(alpha: 0.4)),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: readOnly ? const Color(0xFFF0EDED) : Colors.white,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: maroonColor.withValues(alpha: 0.25))),
             errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.red)),

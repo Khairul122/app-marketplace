@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'detail_produk.dart';
 import 'services/api_service.dart';
+import 'services/product_service.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -17,6 +18,7 @@ class _SearchPageState extends State<SearchPage> {
   final Color redMain = const Color(0xFF5D1A1A);
   final Color greyBG = const Color(0xFFF2F2F2);
   final ApiService _api = ApiService();
+  final ProductService _productService = ProductService();
 
   List<Map<String, dynamic>> _productResults = [];
   List<Map<String, dynamic>> _orderResults = [];
@@ -65,7 +67,7 @@ class _SearchPageState extends State<SearchPage> {
 
     try {
       final results = await Future.wait([
-        _api.get('/products?q=${Uri.encodeQueryComponent(query)}'),
+        _productService.searchMyProducts(query),
         _api.get('/my-orders'),
       ]);
 
@@ -246,7 +248,7 @@ class _SearchPageState extends State<SearchPage> {
         orElse: () => images.first,
       );
       if (primary is Map && primary['image_url'] != null) {
-        return primary['image_url'] as String;
+        return ApiService.resolveImageUrl(primary['image_url'] as String);
       }
     }
     return '';
@@ -256,17 +258,21 @@ class _SearchPageState extends State<SearchPage> {
     final imageUrl = _primaryImageUrl(product);
     final name = (product['name'] as String?) ?? 'Produk';
     final price = product['price'];
-    final priceInt = price is num ? price.toInt() : int.tryParse('$price') ?? 0;
+    final priceInt = price is num ? price.toInt() : (double.tryParse('$price')?.toInt() ?? 0);
     final categoryName = product['category'] is Map
         ? (product['category']['name'] as String?) ?? ''
         : '';
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        Navigator.push<bool>(
           context,
-          MaterialPageRoute(builder: (_) => DetailProduk(product: product)),
-        );
+          MaterialPageRoute(builder: (_) => DetailProduk(product: product, enableEditDelete: false)),
+        ).then((refresh) {
+          if (refresh == true) {
+            _runSearch(_searchController.text);
+          }
+        });
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -296,6 +302,7 @@ class _SearchPageState extends State<SearchPage> {
                 child: imageUrl.isNotEmpty
                     ? Image.network(
                         imageUrl,
+                        headers: const {'localtonet-skip-warning': 'true'},
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,

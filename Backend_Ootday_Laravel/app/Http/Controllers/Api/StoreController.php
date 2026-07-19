@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class StoreController extends Controller
@@ -53,7 +52,7 @@ class StoreController extends Controller
 
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('stores', 'public');
-            $data['photo_url'] = Storage::url($path);
+            $data['photo_url'] = '/storage/'.$path;
         }
 
         $store->update($data);

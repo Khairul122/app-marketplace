@@ -36,15 +36,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Map<String, dynamic>? get _selectedVariant {
     if (_variants.isEmpty) return null;
     for (final v in _variants) {
-      if ((v['size'] ?? '') == _selectedSize && (v['color'] ?? '') == _selectedColor) {
+      if ((v['attribute1_value'] ?? '') == _selectedSize && (v['attribute2_value'] ?? '') == _selectedColor) {
         return v;
       }
     }
     for (final v in _variants) {
-      if ((v['color'] ?? '') == _selectedColor) return v;
+      if ((v['attribute2_value'] ?? '') == _selectedColor) return v;
     }
     for (final v in _variants) {
-      if ((v['size'] ?? '') == _selectedSize) return v;
+      if ((v['attribute1_value'] ?? '') == _selectedSize) return v;
     }
     return _variants.first;
   }
@@ -106,11 +106,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final Set<String> loadedSizes = {};
       final Set<String> loadedColors = {};
       for (var row in loadedVariants) {
-        if (row['size'] != null && row['size'].toString().isNotEmpty) {
-          loadedSizes.add(row['size'].toString());
+        if (row['attribute1_value'] != null && row['attribute1_value'].toString().isNotEmpty) {
+          loadedSizes.add(row['attribute1_value'].toString());
         }
-        if (row['color'] != null && row['color'].toString().isNotEmpty) {
-          loadedColors.add(row['color'].toString());
+        if (row['attribute2_value'] != null && row['attribute2_value'].toString().isNotEmpty) {
+          loadedColors.add(row['attribute2_value'].toString());
         }
         if (row['image_url'] != null && row['image_url'].toString().isNotEmpty) {
           final resolvedVariantImg = CartData.resolveImageUrl(row['image_url'].toString());
@@ -491,7 +491,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   ImageProvider _imageProviderFor(String? path) {
     final resolved = path ?? 'assets/images/Produk_1.png';
     if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
-      return NetworkImage(resolved);
+      return NetworkImage(resolved, headers: const {'localtonet-skip-warning': 'true'});
     }
     return AssetImage(resolved);
   }
@@ -500,6 +500,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return Image.network(
         path,
+        headers: const {'localtonet-skip-warning': 'true'},
         width: width,
         height: height,
         fit: fit,
@@ -706,7 +707,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               // Cari image_url khusus untuk warna varian ini jika ada
                               String? variantImageUrl;
                               for (final v in _variants) {
-                                if (v['color'] == color && v['image_url'] != null && v['image_url'].toString().isNotEmpty) {
+                                if (v['attribute2_value'] == color && v['image_url'] != null && v['image_url'].toString().isNotEmpty) {
                                   variantImageUrl = v['image_url'].toString();
                                   break;
                                 }

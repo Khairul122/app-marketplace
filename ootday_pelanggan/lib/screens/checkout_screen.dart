@@ -266,6 +266,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ? Image.asset(item['image'], width: 70, height: 70, fit: BoxFit.cover)
                 : Image.network(
                     item['image'],
+                    headers: const {'localtonet-skip-warning': 'true'},
                     width: 70,
                     height: 70,
                     fit: BoxFit.cover,

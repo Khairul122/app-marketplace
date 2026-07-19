@@ -135,7 +135,7 @@ class ProfilProdukTabState extends State<ProfilProdukTab> {
     final imageUrl = _primaryImageUrl(product);
     final productName = (product['name'] as String?) ?? 'Produk';
     final price = product['price'];
-    final priceInt = price is num ? price.toInt() : int.tryParse('$price') ?? 0;
+    final priceInt = price is num ? price.toInt() : (double.tryParse('$price')?.toInt() ?? 0);
 
     return GestureDetector(
       onTap: () async {
@@ -223,6 +223,7 @@ class ProfilProdukTabState extends State<ProfilProdukTab> {
     if (resolvedUrl.startsWith('http')) {
       return Image.network(
         resolvedUrl,
+        headers: const {'localtonet-skip-warning': 'true'},
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,

@@ -47,9 +47,13 @@ class ProductController extends Controller
             return response()->json(['message' => 'Toko tidak ditemukan'], 404);
         }
 
-        return response()->json(
-            $store->products()->with(['images', 'variants', 'category'])->latest()->get()
-        );
+        $query = $store->products()->with(['images', 'variants', 'category']);
+
+        if ($request->filled('q')) {
+            $query->where('name', 'like', '%'.$request->string('q').'%');
+        }
+
+        return response()->json($query->latest()->get());
     }
 
     public function store(Request $request)
@@ -70,8 +74,10 @@ class ProductController extends Controller
             'images' => ['nullable', 'array'],
             'images.*' => ['file', 'image', 'max:5120'],
             'variants' => ['nullable', 'array'],
-            'variants.*.size' => ['required_with:variants', 'string', 'max:50'],
-            'variants.*.color' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute1_name' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute1_value' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute2_name' => ['nullable', 'required_with:variants.*.attribute2_value', 'string', 'max:50'],
+            'variants.*.attribute2_value' => ['nullable', 'required_with:variants.*.attribute2_name', 'string', 'max:50'],
             'variants.*.stock' => ['nullable', 'integer', 'min:0'],
             'variants.*.price' => ['nullable', 'numeric', 'min:0'],
             'variants.*.price_adjustment' => ['nullable', 'numeric'],
@@ -99,7 +105,7 @@ class ProductController extends Controller
             $path = $file->store('products', 'public');
 
             $product->images()->create([
-                'image_url' => Storage::url($path),
+                'image_url' => '/storage/'.$path,
                 'is_primary' => $index === 0,
                 'sort_order' => $index,
             ]);
@@ -110,12 +116,14 @@ class ProductController extends Controller
             $imageUrl = $variant['image_url'] ?? null;
             if (isset($variantImages[$index]) && $variantImages[$index]->isValid()) {
                 $path = $variantImages[$index]->store('variants', 'public');
-                $imageUrl = Storage::url($path);
+                $imageUrl = '/storage/'.$path;
             }
 
             $product->variants()->create([
-                'size' => $variant['size'],
-                'color' => $variant['color'],
+                'attribute1_name' => $variant['attribute1_name'],
+                'attribute1_value' => $variant['attribute1_value'],
+                'attribute2_name' => $variant['attribute2_name'] ?? null,
+                'attribute2_value' => $variant['attribute2_value'] ?? null,
                 'stock' => $variant['stock'] ?? 0,
                 'price' => $variant['price'] ?? null,
                 'price_adjustment' => $variant['price_adjustment'] ?? 0,
@@ -153,8 +161,10 @@ class ProductController extends Controller
             'images' => ['nullable', 'array'],
             'images.*' => ['file', 'image', 'max:5120'],
             'variants' => ['nullable', 'array'],
-            'variants.*.size' => ['required_with:variants', 'string', 'max:50'],
-            'variants.*.color' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute1_name' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute1_value' => ['required_with:variants', 'string', 'max:50'],
+            'variants.*.attribute2_name' => ['nullable', 'required_with:variants.*.attribute2_value', 'string', 'max:50'],
+            'variants.*.attribute2_value' => ['nullable', 'required_with:variants.*.attribute2_name', 'string', 'max:50'],
             'variants.*.stock' => ['nullable', 'integer', 'min:0'],
             'variants.*.price' => ['nullable', 'numeric', 'min:0'],
             'variants.*.price_adjustment' => ['nullable', 'numeric'],
@@ -183,7 +193,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $index => $file) {
                 $path = $file->store('products', 'public');
                 $product->images()->create([
-                    'image_url' => Storage::url($path),
+                    'image_url' => '/storage/'.$path,
                     'is_primary' => $index === 0,
                     'sort_order' => $index,
                 ]);
@@ -198,12 +208,14 @@ class ProductController extends Controller
                 $imageUrl = $variant['image_url'] ?? null;
                 if (isset($variantImages[$index]) && $variantImages[$index]->isValid()) {
                     $path = $variantImages[$index]->store('variants', 'public');
-                    $imageUrl = Storage::url($path);
+                    $imageUrl = '/storage/'.$path;
                 }
 
                 $product->variants()->create([
-                    'size' => $variant['size'],
-                    'color' => $variant['color'],
+                    'attribute1_name' => $variant['attribute1_name'],
+                    'attribute1_value' => $variant['attribute1_value'],
+                    'attribute2_name' => $variant['attribute2_name'] ?? null,
+                    'attribute2_value' => $variant['attribute2_value'] ?? null,
                     'stock' => $variant['stock'] ?? 0,
                     'price' => $variant['price'] ?? null,
                     'price_adjustment' => $variant['price_adjustment'] ?? 0,
@@ -265,7 +277,7 @@ class ProductController extends Controller
             $path = $file->store('products', 'public');
 
             $product->images()->create([
-                'image_url' => Storage::url($path),
+                'image_url' => '/storage/'.$path,
                 'is_primary' => ! $hasPrimary,
                 'sort_order' => $nextSort++,
             ]);

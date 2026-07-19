@@ -365,6 +365,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                 child: imageUrl.startsWith('http')
                     ? Image.network(
                         imageUrl,
+                        headers: const {'localtonet-skip-warning': 'true'},
                         fit: BoxFit.cover,
                         width: double.infinity,
                         errorBuilder: (context, error, stackTrace) => Container(

@@ -5,7 +5,6 @@ namespace App\Livewire\Admin\Products;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -132,7 +131,7 @@ class Index extends Component
             $path = $image->store('products', 'public');
 
             $product->images()->create([
-                'image_url' => Storage::url($path),
+                'image_url' => '/storage/'.$path,
                 'is_primary' => $index === 0,
                 'sort_order' => $index,
             ]);
@@ -170,7 +169,7 @@ class Index extends Component
                 $path = $image->store('products', 'public');
 
                 $product->images()->create([
-                    'image_url' => Storage::url($path),
+                    'image_url' => '/storage/'.$path,
                     'is_primary' => ! $hasPrimary,
                     'sort_order' => $nextSort++,
                 ]);

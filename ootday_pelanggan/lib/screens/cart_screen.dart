@@ -270,6 +270,7 @@ class _CartScreenState extends State<CartScreen> {
                   )
                 : Image.network(
                     item['image'],
+                    headers: const {'localtonet-skip-warning': 'true'},
                     width: 90,
                     height: 90,
                     fit: BoxFit.cover,

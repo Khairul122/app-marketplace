@@ -99,7 +99,7 @@ class OrderController extends Controller
                     'product_id' => $product->id,
                     'variant_id' => $item->variant->id,
                     'product_name' => $product->name,
-                    'variant_label' => trim($item->variant->size.' / '.$item->variant->color, ' /'),
+                    'variant_label' => trim($item->variant->attribute1_value.' / '.($item->variant->attribute2_value ?? ''), ' /'),
                     'image_url' => $product->images()->where('is_primary', true)->first()?->image_url,
                     'price' => $item->variant->effectivePrice(),
                     'quantity' => $item->quantity,

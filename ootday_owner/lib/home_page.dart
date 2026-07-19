@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ootday_owner/widgets/owner_bottom_nav.dart';
 import 'package:ootday_owner/chat.dart';
+import 'package:ootday_owner/services/api_service.dart';
 import 'package:ootday_owner/services/auth_service.dart';
 import 'package:ootday_owner/services/dashboard_service.dart';
 import 'package:ootday_owner/services/order_service.dart';
@@ -547,25 +548,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildProductImage(String imageUrl) {
-    if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: 70,
-        height: 70,
-        errorBuilder: (_, __, ___) => _placeholderImage(),
-      );
-    }
-    if (imageUrl.isNotEmpty) {
-      return Image.asset(
-        imageUrl,
-        fit: BoxFit.cover,
-        width: 70,
-        height: 70,
-        errorBuilder: (_, __, ___) => _placeholderImage(),
-      );
-    }
-    return _placeholderImage();
+    final resolved = ApiService.resolveImageUrl(imageUrl);
+    if (resolved.isEmpty) return _placeholderImage();
+    return Image.network(
+      resolved,
+      fit: BoxFit.cover,
+      width: 70,
+      height: 70,
+      errorBuilder: (_, __, ___) => _placeholderImage(),
+    );
   }
 
   Widget _placeholderImage() {

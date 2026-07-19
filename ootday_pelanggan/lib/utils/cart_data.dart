@@ -47,10 +47,10 @@ class CartData {
     final price = _effectivePrice(variant, product);
 
     final descParts = <String>[
-      if (variant['color'] != null && variant['color'].toString().isNotEmpty)
-        'Warna: ${variant['color']}',
-      if (variant['size'] != null && variant['size'].toString().isNotEmpty)
-        'Ukuran: ${variant['size']}',
+      if (variant['attribute1_value'] != null && variant['attribute1_value'].toString().isNotEmpty)
+        '${variant['attribute1_name'] ?? 'Varian'}: ${variant['attribute1_value']}',
+      if (variant['attribute2_value'] != null && variant['attribute2_value'].toString().isNotEmpty)
+        '${variant['attribute2_name'] ?? 'Varian'}: ${variant['attribute2_value']}',
     ];
 
     return {
@@ -59,8 +59,8 @@ class CartData {
       'product_id': product['id'],
       'name': product['name'] ?? '',
       'desc': descParts.isEmpty ? '-' : descParts.join(', '),
-      'size': variant['size'],
-      'color': variant['color'],
+      'size': variant['attribute1_value'],
+      'color': variant['attribute2_value'],
       'price': price.toInt(),
       'quantity': item['quantity'] ?? 1,
       'selected': item['is_selected'] == true || item['is_selected'] == 1,

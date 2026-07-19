@@ -31,6 +31,14 @@ class ProductService {
     return data is List ? data : <dynamic>[];
   }
 
+  /// GET /my-products?q=... — cari produk milik toko login saja (di-scope
+  /// server-side), bukan endpoint pencarian global `/products` yang
+  /// mengembalikan produk semua toko.
+  Future<List<dynamic>> searchMyProducts(String query) async {
+    final data = await _api.get('/my-products?q=${Uri.encodeQueryComponent(query)}');
+    return data is List ? data : <dynamic>[];
+  }
+
   /// GET /products/{id} — detail satu produk.
   Future<Map<String, dynamic>> getProductDetail(int id) async {
     final data = await _api.get('/products/$id');
@@ -65,11 +73,17 @@ class ProductService {
 
     for (var i = 0; i < variants.length; i++) {
       final variant = variants[i];
-      if (variant['size'] != null) {
-        fields['variants[$i][size]'] = variant['size'].toString();
+      if (variant['attribute1_name'] != null) {
+        fields['variants[$i][attribute1_name]'] = variant['attribute1_name'].toString();
       }
-      if (variant['color'] != null) {
-        fields['variants[$i][color]'] = variant['color'].toString();
+      if (variant['attribute1_value'] != null) {
+        fields['variants[$i][attribute1_value]'] = variant['attribute1_value'].toString();
+      }
+      if (variant['attribute2_name'] != null && (variant['attribute2_name'] as String).isNotEmpty) {
+        fields['variants[$i][attribute2_name]'] = variant['attribute2_name'].toString();
+      }
+      if (variant['attribute2_value'] != null && (variant['attribute2_value'] as String).isNotEmpty) {
+        fields['variants[$i][attribute2_value]'] = variant['attribute2_value'].toString();
       }
       if (variant['stock'] != null) {
         fields['variants[$i][stock]'] = variant['stock'].toString();
@@ -123,11 +137,17 @@ class ProductService {
 
     for (var i = 0; i < variants.length; i++) {
       final variant = variants[i];
-      if (variant['size'] != null) {
-        fields['variants[$i][size]'] = variant['size'].toString();
+      if (variant['attribute1_name'] != null) {
+        fields['variants[$i][attribute1_name]'] = variant['attribute1_name'].toString();
       }
-      if (variant['color'] != null) {
-        fields['variants[$i][color]'] = variant['color'].toString();
+      if (variant['attribute1_value'] != null) {
+        fields['variants[$i][attribute1_value]'] = variant['attribute1_value'].toString();
+      }
+      if (variant['attribute2_name'] != null && (variant['attribute2_name'] as String).isNotEmpty) {
+        fields['variants[$i][attribute2_name]'] = variant['attribute2_name'].toString();
+      }
+      if (variant['attribute2_value'] != null && (variant['attribute2_value'] as String).isNotEmpty) {
+        fields['variants[$i][attribute2_value]'] = variant['attribute2_value'].toString();
       }
       if (variant['stock'] != null) {
         fields['variants[$i][stock]'] = variant['stock'].toString();

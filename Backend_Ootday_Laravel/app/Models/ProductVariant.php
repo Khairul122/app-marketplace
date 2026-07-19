@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['product_id', 'size', 'color', 'stock', 'price', 'price_adjustment', 'image_url'])]
+#[Fillable(['product_id', 'attribute1_name', 'attribute1_value', 'attribute2_name', 'attribute2_value', 'stock', 'price', 'price_adjustment', 'image_url'])]
 class ProductVariant extends Model
 {
     public function product()

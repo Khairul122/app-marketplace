@@ -283,7 +283,7 @@ class _OrderStatusDetailPageState extends State<OrderStatusDetailPage> {
         : <String, dynamic>{};
     final productName = firstItem['product_name']?.toString() ?? 'Produk';
     final extra = items.length > 1 ? ' +${items.length - 1} lainnya' : '';
-    final imageUrl = firstItem['image_url']?.toString() ?? '';
+    final imageUrl = ApiService.resolveImageUrl(firstItem['image_url']?.toString());
     final status = order['status']?.toString() ?? widget.status;
 
     return Container(
@@ -433,7 +433,7 @@ class _OrderStatusDetailPageState extends State<OrderStatusDetailPage> {
                                 child: (item['image_url']?.toString() ?? '').isEmpty
                                     ? const Icon(Icons.image, color: Colors.grey, size: 20)
                                     : Image.network(
-                                        item['image_url'].toString(),
+                                        ApiService.resolveImageUrl(item['image_url'].toString()),
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) =>
                                             const Icon(Icons.image, color: Colors.grey, size: 20),

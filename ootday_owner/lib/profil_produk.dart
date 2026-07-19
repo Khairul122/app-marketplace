@@ -66,7 +66,7 @@ class _ProfilProdukState extends State<ProfilProduk> {
         orElse: () => images.first,
       );
       if (primary is Map && primary['image_url'] != null) {
-        return primary['image_url'] as String;
+        return ApiService.resolveImageUrl(primary['image_url'] as String);
       }
     }
     return '';
@@ -197,16 +197,20 @@ class _ProfilProdukState extends State<ProfilProduk> {
     final imageUrl = _primaryImageUrl(product);
     final name = (product['name'] as String?) ?? 'Produk';
     final price = product['price'];
-    final priceInt = price is num ? price.toInt() : int.tryParse('$price') ?? 0;
+    final priceInt = price is num ? price.toInt() : (double.tryParse('$price')?.toInt() ?? 0);
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
+        Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) => DetailProduk(product: product),
+            builder: (_) => DetailProduk(product: product, enableEditDelete: false),
           ),
-        );
+        ).then((refresh) {
+          if (refresh == true) {
+            _loadProducts();
+          }
+        });
       },
       child: Container(
         decoration: BoxDecoration(
@@ -236,6 +240,7 @@ class _ProfilProdukState extends State<ProfilProduk> {
                     child: imageUrl.isNotEmpty
                         ? Image.network(
                             imageUrl,
+                            headers: const {'localtonet-skip-warning': 'true'},
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,

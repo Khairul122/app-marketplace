@@ -418,6 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: imagePath.startsWith('http')
                 ? Image.network(
                     imagePath,
+                    headers: const {'localtonet-skip-warning': 'true'},
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) =>
                         Image.asset('assets/images/wanita_icons.png', fit: BoxFit.contain),
@@ -438,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ImageProvider _imageProvider(String path) {
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return NetworkImage(path);
+      return NetworkImage(path, headers: const {'localtonet-skip-warning': 'true'});
     }
     return AssetImage(path);
   }

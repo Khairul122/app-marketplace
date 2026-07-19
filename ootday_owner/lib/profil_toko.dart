@@ -336,6 +336,7 @@ class _ProfilTokoState extends State<ProfilToko>
                 child: photoUrl != null
                     ? Image.network(
                         ApiService.resolveImageUrl(photoUrl),
+                        headers: const {'localtonet-skip-warning': 'true'},
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _avatarPlaceholder(),
                       )
@@ -553,6 +554,7 @@ class _ProfilTokoState extends State<ProfilToko>
               child: photoUrl != null && photoUrl.isNotEmpty
                   ? Image.network(
                       ApiService.resolveImageUrl(photoUrl),
+                      headers: const {'localtonet-skip-warning': 'true'},
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _storeLogoFallback(),
                     )
